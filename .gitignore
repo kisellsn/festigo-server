@@ -1,0 +1,66 @@
+# Віртуальне середовище
+venv/
+env/
+en/
+
+# Python байт-код
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Логи
+*.log
+
+# Конфігурація IDE
+.vscode/
+.idea/
+
+# PyInstaller
+*.spec
+dist/
+build/
+
+# Тестові результати
+htmlcov/
+.tox/
+.nox/
+.coverage
+coverage.xml
+*.cover
+.cache
+
+# pipenv / poetry / pip-tools
+Pipfile.lock
+poetry.lock
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Pyre type checker
+.pyre/
+
+# MyPy
+.mypy_cache/
+
+# Pytype
+.pytype/
+
+# Pytest cache
+.pytest_cache/
+
+# Temporary / OS files
+.DS_Store
+Thumbs.db
+
+# dotenv
+.env
+.env.*
+
+# SQLite
+*.sqlite3
+*.db
+
+# Local settings or secrets (опціонально)
+settings_local.py
+festigo-e56f3-firebase-adminsdk-fbsvc-c4c75d3c8a.json
+
