@@ -2,23 +2,30 @@ import json
 import os
 from datetime import datetime
 
-from google.cloud import firestore
+import firebase_admin
 from dotenv import load_dotenv
+
+from google.cloud import firestore
 from firebase_admin import credentials, initialize_app
 
-import transformers
-from config import FIREBASE_CREDENTIALS_PATH
-from models import Event
+from services import transformers
+from app.config import FIREBASE_CREDENTIALS_PATH
+from firebase_admin import credentials, firestore
+
+from app.models import Event
 from typing import List
 
 
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = FIREBASE_CREDENTIALS_PATH
+#
+# cred = credentials.Certificate(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
+# initialize_app(cred)
+# db = firestore.Client()
+if not firebase_admin._apps:
+    cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+    firebase_admin.initialize_app(cred)
 
-load_dotenv()
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = FIREBASE_CREDENTIALS_PATH
-
-cred = credentials.Certificate(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
-initialize_app(cred)
-db = firestore.Client()
+db = firestore.client()
 
 
 def save_events(events: List[Event]):
@@ -32,7 +39,6 @@ def get_all_events():
     events_ref = db.collection("events")
     return [doc.to_dict() for doc in events_ref.stream()]
 
-from google.cloud.firestore_v1 import DocumentSnapshot
 
 def delete_expired_events():
     now = datetime.now()
@@ -58,7 +64,7 @@ def delete_expired_events():
 
 if __name__ == "__main__":
     # Для тестування — завантаження з файлу
-    with open("categorized_events.json", "r", encoding="utf-8") as f:
+    with open("../test_data/categorized_events.json", "r", encoding="utf-8") as f:
         api_response = json.load(f)
 
     parsed_events = transformers.transform_events(api_response[2:])

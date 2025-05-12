@@ -46,3 +46,7 @@ tzlocal==5.3.1
 uritemplate==4.1.1
 urllib3==2.4.0
 uvicorn==0.34.2
+
+scikit-learn~=1.6.1
+numpy~=2.2.5
+geopy~=2.4.1

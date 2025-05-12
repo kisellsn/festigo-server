@@ -1,7 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-from fetch_and_store import fetch_and_store_events
-from config import SCHEDULE_INTERVAL_HOURS, SCHEDULE_DELETE_INTERVAL_HOURS
-from firestore_client import delete_expired_events
+from services.fetcher import fetch_and_store_events
+from app.config import SCHEDULE_INTERVAL_HOURS, SCHEDULE_DELETE_INTERVAL_HOURS
+from services.firestore_client import delete_expired_events
 
 
 def start_scheduler():

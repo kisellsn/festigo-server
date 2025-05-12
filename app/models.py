@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 from datetime import datetime
 
 class CategoryScore(BaseModel):
@@ -29,5 +29,7 @@ class Event(BaseModel):
     city: str
     country: str
     price: Optional[str] = "-"
+    component_vectors: Optional[Dict[str, List[float]]] = None
+
 
 

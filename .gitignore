@@ -62,5 +62,8 @@ Thumbs.db
 
 # Local settings or secrets (опціонально)
 settings_local.py
-festigo-e56f3-firebase-adminsdk-fbsvc-c4c75d3c8a.json
+firebase/festigo-e56f3-firebase-adminsdk-fbsvc-c4c75d3c8a.json
+firebase/festigo-e56f3-firebase-adminsdk-fbsvc-c4c75d3c8a.json
+test_data/
+
 

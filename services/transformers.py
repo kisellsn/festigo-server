@@ -1,4 +1,4 @@
-from models import Event, Venue
+from app.models import Event, Venue
 from datetime import datetime
 from typing import List
 

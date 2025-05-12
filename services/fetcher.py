@@ -1,8 +1,11 @@
+import json
 import requests
-from config import EVENTS_API_URL, RAPIDAPI_KEY, RAPIDAPI_HOST
-from event_categorization import assign_categories_to_events
-from transformers import transform_events
-from firestore_client import save_events
+
+from app.config import EVENTS_API_URL, RAPIDAPI_KEY, RAPIDAPI_HOST
+from services.event_categorization import assign_categories_to_events
+from recommendation.vectorizer import build_event_components, generate_events_vectors
+from services.transformers import transform_events
+from services.firestore_client import save_events, db
 
 HEADERS = {
     "x-rapidapi-key": RAPIDAPI_KEY,
@@ -72,5 +75,9 @@ def fetch_and_store_events():
     print(f"Total raw events fetched: {len(all_events)}")
 
     parsed_events = transform_events(all_events)
-    save_events(parsed_events)
+    enriched_events = generate_events_vectors(parsed_events)
+    save_events(enriched_events)
     print(f"Saved {len(parsed_events)} parsed events to Firestore.")
+
+if __name__ == "__main__":
+    fetch_and_store_events()
