@@ -174,7 +174,7 @@ def recommend_events_for_user(user_id, top_n=20):
         scored.append((avg_score, event))
 
     scored.sort(reverse=True, key=lambda x: x[0])
-    return [e for _, e in scored[:top_n]]
+    return [e.get("id") for _, e in scored[:top_n]]
 
 def get_recommendations(user_id, top_n=20):
     return recommend_events_for_user(user_id, top_n)
