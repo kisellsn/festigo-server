@@ -31,5 +31,8 @@ class Event(BaseModel):
     price: Optional[str] = "-"
     component_vectors: Optional[Dict[str, List[float]]] = None
 
+class FirebaseLoginRequest(BaseModel):
+    user_id: str
+
 
 
