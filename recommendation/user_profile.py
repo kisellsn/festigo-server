@@ -51,7 +51,6 @@ def build_profile_vector(user_id):
     })
     return profile_components
 
-#  TODO: викликати піля отримання рекомендацій
 def update_profile_vector(user_id: str):
     """
     Updates the user's profile vector by averaging the onboarding profile with
