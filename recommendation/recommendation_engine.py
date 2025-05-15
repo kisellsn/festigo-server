@@ -1,6 +1,7 @@
 import json
 import re
 from datetime import datetime, timezone
+from types import NoneType
 
 import numpy as np
 from geopy.distance import geodesic
@@ -81,7 +82,10 @@ def recommend_events_for_user(user_id, top_n=20):
     responses = onboarding_doc.to_dict()
     answers = responses.get("answers", {})
 
-    user_location = answers.get("3")[0]
+    try:
+        user_location = answers.get("3")[0]
+    except:
+        user_location = None
     # user_coords = geocode_address(user_location) if user_location else None
 
     max_distance_pref = answers.get("4", "")
