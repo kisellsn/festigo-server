@@ -6,6 +6,9 @@ from app.models import Event
 from services.firestore_client import db
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+from services.transformers import transform_events
+
+
 def category_vector(selected_categories):
     """
     Створює вектор для вибраних категорій на основі фіксованого списку.
@@ -84,7 +87,7 @@ def generate_events_vectors(events: List[Event]):
 
     for i, event in enumerate(events):
         component_vectors = {
-            field: field_vectors[field][i].tolist()
+            field: field_vectors[field][i] if isinstance(field_vectors[field][i], list) else field_vectors[field][i].tolist()
             for field in field_names
         }
         event.component_vectors = component_vectors
@@ -126,7 +129,7 @@ def generate_component_vectors_from_firestore():
 
     print("✅ Component vectors added to Firestore events.")
 
-# update already existing events if file to test
+# update already existing events if 4a file to test
 def generate_component_vectors_from_file(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
         events = json.load(f)
@@ -160,6 +163,57 @@ def generate_component_vectors_from_file(filepath):
 
 
 if __name__ == "__main__":
+    # parsed_events = transform_events([{
+    #     "event_id": "L2F1dGhvcml0eS9ob3Jpem9uL2NsdXN0ZXJlZF9ldmVudC8yMDI1LTA1LTEzfDg4NjgwNDA1MDEzMjI0OTU2NzQ=",
+    #     "name": "TNMK (Tanok na Maidani Kongo)",
+    #     "link": None,
+    #     "description": None,
+    #     "language": "en",
+    #     "date_human_readable": "Tue, May 13, 7 PM GMT+3",
+    #     "start_time": "2025-05-13 19:00:00",
+    #     "start_time_utc": "2025-05-13 16:00:00",
+    #     "start_time_precision_sec": 1,
+    #     "is_virtual": False,
+    #     "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcROqH_QP2vQmvo8C8veAIfDcIfi3f3L905Iq6Z0E9Sv9Q3eJNAY9gVsxKKwPg&s",
+    #     "ticket_links": [
+    #         {
+    #             "source": "Karabas.com",
+    #             "link": "https://ternopil.karabas.com/en/index.php/clubs/",
+    #             "fav_icon": "https://encrypted-tbn3.gstatic.com/faviconV2?url=https://karabas.com&client=HORIZON&size=96&type=FAVICON&fallback_opts=TYPE,SIZE,URL&nfrp=2"
+    #         }
+    #     ],
+    #     "info_links": [
+    #         {}
+    #     ],
+    #     "venue": {
+    #         "google_id": "0x473036c7d0221f29:0x3fa81302bef0d6",
+    #         "name": "PK Berezil",
+    #         "phone_number": None,
+    #         "website": None,
+    #         "review_count": 7,
+    #         "rating": 4.3,
+    #         "subtype": "Transit stop",
+    #         "subtypes": [
+    #             "Transit stop",
+    #             "Bus stop",
+    #             "Trolleybus stop"
+    #         ],
+    #         "full_address": "PK Berezil, Ternopil, Ternopil's'ka oblast, Ukraine, 46003",
+    #         "latitude": 49.54649,
+    #         "longitude": 25.5765,
+    #         "district": None,
+    #         "street": None,
+    #         "city": "Ternopil",
+    #         "zipcode": None,
+    #         "state": "Ternopil Oblast",
+    #         "country": "UA",
+    #         "timezone": "Europe/Kiev",
+    #         "google_mid": "/g/1ptzbh8pg"
+    #     }
+    # }])
+    # enriched_events = generate_events_vectors(parsed_events)
+    # print(enriched_events)
+
     filepath = "../test_data/categorized_events.json"
     # with open(filepath, "r", encoding="utf-8") as f:
     #     events = json.load(f)
