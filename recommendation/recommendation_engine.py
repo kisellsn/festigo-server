@@ -53,12 +53,13 @@ def is_event_time_suitable(event, preferences):
 
 def is_within_distance(user_loc, event_loc, max_km):
     if not user_loc or not event_loc or None in user_loc or None in event_loc:
-        return False
+        return False, None
     try:
-        dist = geodesic(user_loc, event_loc).km # TODO: is it good if user_loc is just a city not coordinates?
-        return dist <= max_km
+        dist = geodesic(user_loc, event_loc).km
+        return dist <= max_km, dist
     except Exception:
-        return False
+        return False, None
+
 
 
 def recommend_events_for_user(user_id, top_n=20):
@@ -70,7 +71,7 @@ def recommend_events_for_user(user_id, top_n=20):
     :return: list of recommended events
     """
 
-    #-----------------user info
+    # ---------------- user info
     user_doc = db.collection("users").document(user_id).get()
     if not user_doc.exists:
         return []
@@ -82,19 +83,22 @@ def recommend_events_for_user(user_id, top_n=20):
     responses = onboarding_doc.to_dict()
     answers = responses.get("answers", {})
 
+    # --- координати
     try:
-        user_location = answers.get("3")[0]
-    except:
-        user_location = None
-    # user_coords = geocode_address(user_location) if user_location else None
+        location_data = answers.get("3")[0]
+        user_location_coords = (location_data["lat"], location_data["lon"])
+    except (IndexError, KeyError, TypeError):
+        user_location_coords = None
 
-    max_distance_pref = answers.get("4", "")
+    # --- максимальна відстань
+    try:
+        distance_answer = answers.get("4", [""])[0]
+        digits = re.findall(r"\d+", distance_answer)
+        max_distance_km = int(digits[0]) if digits else DEFAULT_DISTANCE_KM
+    except Exception:
+        max_distance_km = DEFAULT_DISTANCE_KM
+
     preferred_times = answers.get("5", [])
-
-    # max_distance_km = DEFAULT_DISTANCE_KM
-    # digits = re.findall(r"\d+", max_distance_pref[0])
-    # if digits:
-    #     max_distance_km = int(digits[0])
 
 
     profile_components = user_doc.to_dict().get("component_profile_vectors")
@@ -103,7 +107,7 @@ def recommend_events_for_user(user_id, top_n=20):
         if not profile_components:
             return []
 
-    # -----------------fav events info
+    # ----------------- fav events info
     liked_events_docs = db.collection("users").document(user_id).collection("favourite_events").stream()
     liked_event_refs = [doc.to_dict().get("id") for doc in liked_events_docs]
     liked_events = []
@@ -149,7 +153,7 @@ def recommend_events_for_user(user_id, top_n=20):
         aggregated_profile = {k: np.array(v) for k, v in profile_components.items()}
         field_names = aggregated_profile.keys()
 
-    # -----------------events info
+    # ----------------- events info
     events_docs = db.collection("events").stream() #TODO: smth more effective than stream()
 
     events = []
@@ -166,12 +170,34 @@ def recommend_events_for_user(user_id, top_n=20):
         event_components = event.get("component_vectors", {})
         avg_score = score_event_by_components(aggregated_profile, event_components, field_names)
 
-        event_city = event.get("venue", {}).get("city", "").strip().lower()
-        user_city = get_city_from_address(user_location)
+        # --- вплив відстані
+        venue = event.get("venue", {})
+        lat = venue.get("latitude")
+        lon = venue.get("longitude")
 
-        if user_city and event_city and user_city != event_city:
-            avg_score *= 0.5
+        if lat is not None and lon is not None:
+            event_coords = (lat, lon)
+        else:
+            event_coords = None
 
+        within_dist, dist = is_within_distance(user_location_coords, event_coords, max_distance_km)
+
+        if dist is not None:
+            if within_dist:
+                distance_score_multiplier = 1.0
+            else:
+                distance_score_multiplier = max(0.1, 1.0 - (dist - max_distance_km) / 100)
+            avg_score *= distance_score_multiplier
+        elif location_data:
+            event_city = get_city_from_address(venue.get("address", ""))
+            try:
+                user_city = get_city_from_address(location_data.get("title", ""))
+            except Exception:
+                user_city = location_data
+            if user_city and event_city and user_city.lower() != event_city.lower():
+                avg_score *= 0.5
+
+        # --- вплив часу
         if not is_event_time_suitable(event, {"time": preferred_times}):
             avg_score *= 0.7
 
@@ -186,12 +212,3 @@ def get_recommendations(user_id, top_n=20):
 if __name__ == "__main__":
     print(len(get_recommendations("5DAGbcxFASgjsUNm15nP3AIlMYu1")))
     # print(len(get_recommendations("Ybd9Xb0IsDPdDGySzeXv56D7znJ3")))
-# venue = event.get("venue", {})
-#     event_lat = venue.get("latitude")
-#     event_lon = venue.get("longitude")
-#     if event_lat is not None and event_lon is not None:
-#         event_loc = (float(event_lat), float(event_lon))
-#
-#         if user_coords:
-#             if not is_within_distance(user_coords, event_loc, max_distance_km):
-#                 avg_score *= 0.5
