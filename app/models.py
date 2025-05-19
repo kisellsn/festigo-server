@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List, Tuple, Dict
+from typing import Optional, List, Dict
 from datetime import datetime
 
 class CategoryScore(BaseModel):
@@ -8,7 +8,9 @@ class CategoryScore(BaseModel):
 
 class Venue(BaseModel):
     name: str
+    name_uk: Optional[str] = None
     address: str
+    address_uk: Optional[str] = None
     latitude: float
     longitude: float
     subtypes: List[str] = []
@@ -16,7 +18,11 @@ class Venue(BaseModel):
 class Event(BaseModel):
     id: str
     name: str
+    name_uk: Optional[str] = None
+
     description: Optional[str]
+    description_uk: Optional[str] = None
+
     link: Optional[str]
     imageUrl: Optional[str]
     startTime: datetime
@@ -26,8 +32,13 @@ class Event(BaseModel):
     categories_scored: List[CategoryScore]
     genres: List[str]
     main_categories: List[str]
+
     city: str
+    city_uk: Optional[str] = None
+
     country: str
+    country_uk: Optional[str] = None
+
     price: Optional[str] = "-"
     component_vectors: Optional[Dict[str, List[float]]] = None
 

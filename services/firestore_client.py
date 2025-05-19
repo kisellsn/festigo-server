@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime
 
@@ -82,12 +83,14 @@ def delete_event_by_id(event_id: str) -> bool:
 
 if __name__ == "__main__":
     # Для тестування — завантаження з файлу
-    # with open("../test_data/categorized_events.json", "r", encoding="utf-8") as f:
-    #     api_response = json.load(f)
-    #
-    # parsed_events = transformers.transform_events(api_response[2:])
+    with open("../test_data/categorized_events.json", "r", encoding="utf-8") as f:
+        api_response = json.load(f)
+
+    parsed_events = asyncio.run(transformers.transform_events(api_response[2:]))
+    print(f"Total raw events fetched: {len(parsed_events)}")
     # save_events(parsed_events)
     # print(f"Збережено {len(parsed_events)} івентів у Firestore.")
-    delete_event_by_id("L2F1dGhvcml0eS9ob3Jpem9uL2NsdXN0ZXJlZF9ldmVudC8yMDI1LTA1LTEwfDQ1NDc3NDU1MjkzNzk4ODE2MQ==")
+
+    # delete_event_by_id("L2F1dGhvcml0eS9ob3Jpem9uL2NsdXN0ZXJlZF9ldmVudC8yMDI1LTA1LTEwfDQ1NDc3NDU1MjkzNzk4ODE2MQ==")
 
 # L2F1dGhvcml0eS9ob3Jpem9uL2NsdXN0ZXJlZF9ldmVudC8yMDI1LTA1LTEwfDQ1NDc3NDU1MjkzNzk4ODE2MQ==

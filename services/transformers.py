@@ -1,17 +1,47 @@
+import asyncio
+
 from app.models import Event, Venue
 from datetime import datetime
 from typing import List
 
-def parse_event(raw: dict) -> Event:
+from services.translation import translate_text
+
+
+async def safe_translate(text: str) -> str:
+    try:
+        return await translate_text(text)
+    except Exception as e:
+        print(f"Translation error: {e}")
+        return text
+
+
+async def parse_event(raw: dict) -> Event:
+    name_en = raw["name"]
+    description_en = raw.get("description")
+
+    name_uk = await safe_translate(name_en)
+    description_uk = await safe_translate(description_en) if description_en else None
+
     venue_data = raw.get("venue")
     venue = None
     if venue_data:
+        name_venue_en = venue_data.get("name", "")
+        address_en = venue_data.get("full_address", "")
+        print(venue_data)
+
+        subtypes = venue_data.get("subtypes")
+        if subtypes is None:
+            subtype = venue_data.get("subtype")
+            subtypes = [subtype] if subtype else []
+
         venue = Venue(
-            name=venue_data["name"],
-            address=venue_data["full_address"],
+            name=name_venue_en,
+            name_uk=await safe_translate(name_venue_en),
+            address=address_en,
+            address_uk=await safe_translate(address_en),
             latitude=venue_data["latitude"],
             longitude=venue_data["longitude"],
-            subtypes = [] if venue_data.get("subtypes") is None else venue_data.get("subtypes")
+            subtypes=subtypes
         )
 
     categories = raw.get("tags", [])
@@ -20,21 +50,22 @@ def parse_event(raw: dict) -> Event:
         info_links = raw.get("info_links", [])
         ticket_links = raw.get("ticket_links", [])
 
-        if (isinstance(info_links, list) and len(info_links) > 0
-                and isinstance(info_links[0], dict) and info_links[0].get("link")
-        ):
-            link = info_links[0]["link"]
-        elif (isinstance(ticket_links, list) and len(ticket_links) > 0
-                and isinstance(ticket_links[0], dict) and ticket_links[0].get("link")
-        ):
-            link = ticket_links[0]["link"]
-        else:
-            link = None
+        if info_links and isinstance(info_links[0], dict):
+            link = info_links[0].get("link")
+        elif ticket_links and isinstance(ticket_links[0], dict):
+            link = ticket_links[0].get("link")
 
+    city = venue_data.get("city", "") if venue_data else ""
+    country = venue_data.get("country", "") if venue_data else ""
+
+    city_uk = await safe_translate(city) if city else ""
+    country_uk = await safe_translate(country) if country else ""
     return Event(
         id=raw["event_id"],
-        name=raw["name"],
-        description=raw.get("description"),
+        name=name_en,
+        name_uk=name_uk,
+        description=description_en,
+        description_uk=description_uk,
         link=link,
         imageUrl=raw.get("thumbnail"),
         startTime=datetime.strptime(raw["start_time"], "%Y-%m-%d %H:%M:%S"),
@@ -45,19 +76,21 @@ def parse_event(raw: dict) -> Event:
         main_categories=categories if categories else raw.get("main_categories", []),
         genres=raw.get("genres", []),
         city=venue_data.get("city", "") if venue_data else "",
+        city_uk=city_uk,
         country=venue_data.get("country", "") if venue_data else "",
+        country_uk=country_uk,
         price="-"
     )
 
-def transform_events(raw_data: List[dict]) -> List[Event]:
-    return [parse_event(event) for event in raw_data]
+async def transform_events(raw_data: List[dict]) -> List[Event]:
+    return [await parse_event(event) for event in raw_data]
 
 if __name__ == "__main__":
-    parsed_events = transform_events([{
+    parsed_events = asyncio.run(transform_events([{
         "event_id": "L2F1dGhvcml0eS9ob3Jpem9uL2NsdXN0ZXJlZF9ldmVudC8yMDI1LTA1LTEzfDg4NjgwNDA1MDEzMjI0OTU2NzQ=",
         "name": "TNMK (Tanok na Maidani Kongo)",
         "link": None,
-        "description": None,
+        "description": "I have a page in my application(in angular) where the user can post a comment. The comment is stored in Firestore collection with the name o",
         "language": "en",
         "date_human_readable": "Tue, May 13, 7 PM GMT+3",
         "start_time": "2025-05-13 19:00:00",
@@ -100,4 +133,6 @@ if __name__ == "__main__":
             "timezone": "Europe/Kiev",
             "google_mid": "/g/1ptzbh8pg"
         }
-    }])
+    }]))
+
+    print(parsed_events)

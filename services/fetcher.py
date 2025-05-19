@@ -1,3 +1,5 @@
+import asyncio
+
 import requests
 
 from app.config import EVENTS_API_URL, RAPIDAPI_KEY, RAPIDAPI_HOST
@@ -73,7 +75,7 @@ def fetch_and_store_events():
 
     print(f"Total raw events fetched: {len(all_events)}")
 
-    parsed_events = transform_events(all_events)
+    parsed_events = asyncio.run(transform_events(all_events))
     enriched_events = generate_events_vectors(parsed_events)
     save_events(enriched_events)
     print(f"Saved {len(parsed_events)} parsed events to Firestore.")
