@@ -1,11 +1,10 @@
-import json
 import requests
 
 from app.config import EVENTS_API_URL, RAPIDAPI_KEY, RAPIDAPI_HOST
-from services.event_categorization import assign_categories_to_events
-from recommendation.vectorizer import build_event_components, generate_events_vectors
+from categorization.event_categorization import assign_categories_to_events
+from recommendation.vectorizer import generate_events_vectors
 from services.transformers import transform_events
-from services.firestore_client import save_events, db
+from services.firestore_client import save_events
 
 HEADERS = {
     "x-rapidapi-key": RAPIDAPI_KEY,
