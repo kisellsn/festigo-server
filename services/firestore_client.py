@@ -1,12 +1,7 @@
 import json
-import os
 from datetime import datetime
 
 import firebase_admin
-from dotenv import load_dotenv
-
-from google.cloud import firestore
-from firebase_admin import credentials, initialize_app
 
 from services import transformers
 from app.config import FIREBASE_CREDENTIALS_PATH
@@ -50,24 +45,49 @@ def delete_expired_events():
         end_time = event.get("endTime")
         start_time = event.get("startTime")
 
+        expired = False
         if isinstance(end_time, datetime):
-            if end_time.astimezone().replace(tzinfo=None) < now:
-                doc.reference.delete()
-                deleted_count += 1
+            expired = end_time.astimezone().replace(tzinfo=None) < now
         elif isinstance(start_time, datetime):
-            if start_time.astimezone().replace(tzinfo=None) < now:
-                doc.reference.delete()
+            expired = start_time.astimezone().replace(tzinfo=None) < now
+
+        if expired:
+            event_id = doc.id
+            success = delete_event_by_id(event_id)
+            if success:
                 deleted_count += 1
 
-    print(f"Deleted {deleted_count} expired events.")
+    print(f"Deleted {deleted_count} expired events (and removed from favourites).")
+
+
+def delete_event_by_id(event_id: str) -> bool:
+    """Видаляє подію з бд та з усіх favourites"""
+    doc_ref = db.collection("events").document(event_id)
+    if not doc_ref.get().exists:
+        print(f"Event {event_id} not found.")
+        return False
+
+    doc_ref.delete()
+    print(f"Event {event_id} deleted from events.")
+
+    users = db.collection("users").stream()
+    for user in users:
+        fav_ref = db.collection("users").document(user.id).collection("favourite_events").document(event_id)
+        if fav_ref.get().exists:
+            fav_ref.delete()
+            print(f"Event {event_id} deleted from user {user.id} favourites.")
+
+    return True
 
 
 if __name__ == "__main__":
     # Для тестування — завантаження з файлу
-    with open("../test_data/categorized_events.json", "r", encoding="utf-8") as f:
-        api_response = json.load(f)
+    # with open("../test_data/categorized_events.json", "r", encoding="utf-8") as f:
+    #     api_response = json.load(f)
+    #
+    # parsed_events = transformers.transform_events(api_response[2:])
+    # save_events(parsed_events)
+    # print(f"Збережено {len(parsed_events)} івентів у Firestore.")
+    delete_event_by_id("L2F1dGhvcml0eS9ob3Jpem9uL2NsdXN0ZXJlZF9ldmVudC8yMDI1LTA1LTEwfDQ1NDc3NDU1MjkzNzk4ODE2MQ==")
 
-    parsed_events = transformers.transform_events(api_response[2:])
-    save_events(parsed_events)
-    print(f"Збережено {len(parsed_events)} івентів у Firestore.")
-
+# L2F1dGhvcml0eS9ob3Jpem9uL2NsdXN0ZXJlZF9ldmVudC8yMDI1LTA1LTEwfDQ1NDc3NDU1MjkzNzk4ODE2MQ==
