@@ -6,10 +6,10 @@ import joblib
 from app.config import CATEGORY_KEYWORDS
 
 # Завантаження моделі
-genre_model = joblib.load('models/genre_model.joblib')
-genre_mlb = joblib.load('models/genre_mlb.joblib')
-category_model = joblib.load('models/category_model_multi.joblib')
-category_mlb = joblib.load('models/category_mlb.joblib')
+genre_model = joblib.load('categorization/models/genre_model.joblib')
+genre_mlb = joblib.load('categorization/models/genre_mlb.joblib')
+category_model = joblib.load('categorization/models/category_model_multi.joblib')
+category_mlb = joblib.load('categorization/models/category_mlb.joblib')
 
 
 def preprocess_text(*texts: List[str]) -> str:
