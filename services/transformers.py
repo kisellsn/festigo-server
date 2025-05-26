@@ -4,12 +4,17 @@ from app.models import Event, Venue
 from datetime import datetime
 from typing import List
 
-from services.translation import translate_text
+from services.translation import translate_text, translate_city
 
-
-async def safe_translate(text: str) -> str:
+# async def safe_translate(text: str) -> str:
+#     try:
+#         return await libre_translate(text)
+#     except Exception as e:
+#         print(f"Translation error: {e}")
+#         return text
+def safe_translate(text: str) -> str:
     try:
-        return await translate_text(text)
+        return translate_text(text)
     except Exception as e:
         print(f"Translation error: {e}")
         return text
@@ -19,8 +24,8 @@ async def parse_event(raw: dict) -> Event:
     name_en = raw["name"]
     description_en = raw.get("description")
 
-    name_uk = await safe_translate(name_en)
-    description_uk = await safe_translate(description_en) if description_en else None
+    name_uk = safe_translate(name_en)
+    description_uk = safe_translate(description_en) if description_en else None
 
     venue_data = raw.get("venue")
     venue = None
@@ -36,9 +41,8 @@ async def parse_event(raw: dict) -> Event:
 
         venue = Venue(
             name=name_venue_en,
-            name_uk=await safe_translate(name_venue_en),
+            name_uk=safe_translate(name_venue_en),
             address=address_en,
-            address_uk=await safe_translate(address_en),
             latitude=venue_data["latitude"],
             longitude=venue_data["longitude"],
             subtypes=subtypes
@@ -56,10 +60,7 @@ async def parse_event(raw: dict) -> Event:
             link = ticket_links[0].get("link")
 
     city = venue_data.get("city", "") if venue_data else ""
-    country = venue_data.get("country", "") if venue_data else ""
-
-    city_uk = await safe_translate(city) if city else ""
-    country_uk = await safe_translate(country) if country else ""
+    city_uk = translate_city(city) if city else ""
     return Event(
         id=raw["event_id"],
         name=name_en,
@@ -75,10 +76,9 @@ async def parse_event(raw: dict) -> Event:
         categories_scored=raw.get("categories_scored", []),
         main_categories=categories if categories else raw.get("main_categories", []),
         genres=raw.get("genres", []),
-        city=venue_data.get("city", "") if venue_data else "",
+        city=city,
         city_uk=city_uk,
         country=venue_data.get("country", "") if venue_data else "",
-        country_uk=country_uk,
         price="-"
     )
 

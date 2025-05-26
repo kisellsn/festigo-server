@@ -10,7 +10,6 @@ class Venue(BaseModel):
     name: str
     name_uk: Optional[str] = None
     address: str
-    address_uk: Optional[str] = None
     latitude: float
     longitude: float
     subtypes: List[str] = []
@@ -37,8 +36,6 @@ class Event(BaseModel):
     city_uk: Optional[str] = None
 
     country: str
-    country_uk: Optional[str] = None
-
     price: Optional[str] = "-"
     component_vectors: Optional[Dict[str, List[float]]] = None
 

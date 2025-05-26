@@ -1,29 +1,38 @@
-import re
 from typing import Dict, List, Tuple
 import json
-import joblib
-
-from app.config import CATEGORY_KEYWORDS
-
-# Завантаження моделі
-genre_model = joblib.load('categorization/models/genre_model.joblib')
-genre_mlb = joblib.load('categorization/models/genre_mlb.joblib')
-category_model = joblib.load('categorization/models/category_model_multi.joblib')
-category_mlb = joblib.load('categorization/models/category_mlb.joblib')
-
+from app.config import CATEGORY_KEYWORDS, genre_model, category_model, category_mlb, genre_mlb
+import re
+from urllib.parse import urlparse
 
 def preprocess_text(*texts: List[str]) -> str:
-    """Об'єднує та очищує текстові поля."""
     combined = ' '.join([t for t in texts if t])
-    text = combined.lower()
-    text = re.sub(r'http\S+|www.\S+', '', text)  # Видалення URL
-    text = re.sub(r'[^a-zA-Zа-яА-Я0-9\s]', ' ', text)  # Спецсимволи
-    text = re.sub(r'\s+', ' ', text).strip()  # Зайві пробіли
-    return text
+
+    def extract_base_domain(url: str) -> str:
+        netloc = urlparse(url).netloc or url.replace("www.", "")
+        parts = netloc.split('.')
+        if len(parts) >= 2:
+            return parts[-2]
+        return parts[0]
+
+    def replace_urls(text: str) -> str:
+        urls = re.findall(r'(https?://[^\s]+|www\.[^\s]+)', text)
+        for url in urls:
+            domain = extract_base_domain(url)
+            text = text.replace(url, domain)
+        return text
+
+    text = replace_urls(combined)
+
+    text = re.sub(r'[^a-zA-Zа-яА-ЯіїєґІЇЄҐ\s]', ' ', text)
+    text = re.sub(r'\d+', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    return text.lower()
+
+
 
 
 def detect_genres(event: Dict, main_categories: List[str]) -> List[str]:
-    # Працюємо тільки для відповідних категорій
     applicable = {"music", "cinema", "show"}
     if not any(cat in applicable for cat in main_categories):
         return []
@@ -31,6 +40,7 @@ def detect_genres(event: Dict, main_categories: List[str]) -> List[str]:
     text = preprocess_text(
         event.get("name", ""),
         event.get("description", ""),
+        event.get("link", ""),
         event.get("venue", {}).get("name", ""),
         event.get("publisher", ""),
         ' '.join(event.get("venue", {}).get("subtypes") or [])
@@ -48,6 +58,7 @@ def categorize_event(event: Dict) -> List[Tuple[str, float]]:
     text = preprocess_text(
         event.get("name", ""),
         event.get("description", ""),
+        event.get("link", ""),
         event.get("venue", {}).get("name", ""),
         event.get("publisher", ""),
         ' '.join(event.get("venue", {}).get("subtypes") or [])
@@ -73,7 +84,7 @@ def categorize_event(event: Dict) -> List[Tuple[str, float]]:
     for category in set(model_scores) | set(keyword_scores):
         score_model = model_scores.get(category, 0)
         score_keyword = keyword_scores.get(category, 0)
-        combined_scores[category] = round(0.7 * score_model + 0.3 * score_keyword, 3)
+        combined_scores[category] = round(0.3 * score_model + 0.7 * score_keyword, 3)
 
     return sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)
 
@@ -86,7 +97,7 @@ def assign_categories_to_events(events: List[Dict]) -> List[Dict]:
         categories_dicts = [{"category": cat, "score": score} for cat, score in categories]
         event["categories_scored"] = categories_dicts
 
-        main_categories = [c["category"] for c in categories_dicts if c["score"] >= 0.7]
+        main_categories = [c["category"] for c in categories_dicts if c["score"] >= 0.4]
         event["main_categories"] = main_categories
 
         event["genres"] = detect_genres(event, main_categories)
