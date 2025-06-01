@@ -1,17 +1,9 @@
-import asyncio
-
 from app.models import Event, Venue
 from datetime import datetime
 from typing import List
 
 from services.translation import translate_text, translate_city
 
-# async def safe_translate(text: str) -> str:
-#     try:
-#         return await libre_translate(text)
-#     except Exception as e:
-#         print(f"Translation error: {e}")
-#         return text
 def safe_translate(text: str) -> str:
     try:
         return translate_text(text)
@@ -19,8 +11,7 @@ def safe_translate(text: str) -> str:
         print(f"Translation error: {e}")
         return text
 
-
-async def parse_event(raw: dict) -> Event:
+def parse_event(raw: dict) -> Event:
     name_en = raw["name"]
     description_en = raw.get("description")
 
@@ -82,11 +73,11 @@ async def parse_event(raw: dict) -> Event:
         price="-"
     )
 
-async def transform_events(raw_data: List[dict]) -> List[Event]:
-    return [await parse_event(event) for event in raw_data]
+def transform_events(raw_data: List[dict]) -> List[Event]:
+    return [parse_event(event) for event in raw_data]
 
 if __name__ == "__main__":
-    parsed_events = asyncio.run(transform_events([{
+    parsed_events = transform_events([{
         "event_id": "L2F1dGhvcml0eS9ob3Jpem9uL2NsdXN0ZXJlZF9ldmVudC8yMDI1LTA1LTEzfDg4NjgwNDA1MDEzMjI0OTU2NzQ=",
         "name": "TNMK (Tanok na Maidani Kongo)",
         "link": None,
@@ -133,6 +124,6 @@ if __name__ == "__main__":
             "timezone": "Europe/Kiev",
             "google_mid": "/g/1ptzbh8pg"
         }
-    }]))
+    }])
 
     print(parsed_events)
