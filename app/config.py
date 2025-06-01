@@ -24,6 +24,8 @@ SCHEDULE_DELETE_INTERVAL_HOURS = int(os.getenv("SCHEDULE_DELETE_INTERVAL_HOURS",
 SECRET_KEY = os.getenv("SECRET_KEY")
 API_KEY_NAME = os.getenv("API_KEY_NAME")
 ALGORITHM = os.getenv("ALGORITHM")
+SETTINGS_COLLECTION = "app_settings"
+DOC_ID = "scheduler_meta"
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

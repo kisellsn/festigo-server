@@ -5,7 +5,7 @@ from datetime import datetime
 import firebase_admin
 
 from services import transformers
-from app.config import FIREBASE_CREDENTIALS_PATH
+from app.config import FIREBASE_CREDENTIALS_PATH, SETTINGS_COLLECTION, DOC_ID
 from firebase_admin import credentials, firestore
 
 from app.models import Event
@@ -22,6 +22,20 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+
+from datetime import datetime
+
+def get_last_manual_sync_time() -> datetime | None:
+    doc = db.collection(SETTINGS_COLLECTION).document(DOC_ID).get()
+    if doc.exists:
+        timestamp = doc.to_dict().get("last_manual_sync")
+        return timestamp if isinstance(timestamp, datetime) else None
+    return None
+
+def set_last_manual_sync_time(timestamp: datetime):
+    db.collection(SETTINGS_COLLECTION).document(DOC_ID).set({
+        "last_manual_sync": timestamp
+    }, merge=True)
 
 
 def save_events(events: List[Event]):

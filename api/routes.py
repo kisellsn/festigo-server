@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request
 
@@ -6,7 +8,7 @@ from app.dependencies import verify_token, verify_token_easy
 from app.models import FirebaseLoginRequest
 from recommendation.user_profile import build_profile_vector, update_profile_vector
 from services.fetcher import fetch_and_store_events
-from services.firestore_client import delete_expired_events
+from services.firestore_client import delete_expired_events, set_last_manual_sync_time
 from recommendation.recommendation_engine import get_recommendations
 
 router = APIRouter()
@@ -15,6 +17,7 @@ router = APIRouter()
 @router.post("/sync", dependencies=[Depends(verify_token_easy)])
 def manual_sync():
     fetch_and_store_events()
+    set_last_manual_sync_time(datetime.now())
     return {"status": "Manual sync complete"}
 
 @router.post("/cleanup", dependencies=[Depends(verify_token_easy)])
