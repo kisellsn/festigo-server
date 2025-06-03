@@ -12,7 +12,6 @@
 #         return text
 import re
 
-# TODO: from deep_translator import ChatGptTranslator
 from deep_translator import GoogleTranslator
 from app.config import city_translation_map
 
@@ -40,6 +39,8 @@ def translate_text(text: str) -> str:
 
 def translate_city(city: str) -> str:
     return city_translation_map.get(city.strip(), city)
+
+
 
 if __name__ == "__main__":
     print(translate_text("Find the price and buy a ticket to the event - Mysterium, Vinnytsia"))

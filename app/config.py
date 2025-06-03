@@ -7,7 +7,7 @@ from pathlib import Path
 
 load_dotenv()
 
-
+# db
 BASE_DIR = Path(__file__).resolve().parent.parent
 FIREBASE_CREDENTIALS= os.getenv("FIREBASE_CREDENTIALS_PATH")
 
@@ -15,18 +15,23 @@ if FIREBASE_CREDENTIALS and not FIREBASE_CREDENTIALS.startswith("/"):
     FIREBASE_CREDENTIALS_PATH = str(BASE_DIR / FIREBASE_CREDENTIALS)
 else:
     FIREBASE_CREDENTIALS_PATH = FIREBASE_CREDENTIALS
-
+# events
 EVENTS_API_URL = os.getenv("RAPID_API_URL")
 SCHEDULE_INTERVAL_HOURS = int(os.getenv("SCHEDULE_INTERVAL_HOURS", 6))
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
 RAPIDAPI_HOST = os.getenv("RAPIDAPI_HOST")
+
+# app
 SCHEDULE_DELETE_INTERVAL_HOURS = int(os.getenv("SCHEDULE_DELETE_INTERVAL_HOURS", 24))
 SECRET_KEY = os.getenv("SECRET_KEY")
 API_KEY_NAME = os.getenv("API_KEY_NAME")
 ALGORITHM = os.getenv("ALGORITHM")
+
 SETTINGS_COLLECTION = "app_settings"
 DOC_ID = "scheduler_meta"
 
+# translate
+GEMINI_API_KEY = os.getenv("GEMINI_TOKEN")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
