@@ -67,6 +67,9 @@ def fetch_and_store_events():
         events = fetch_events_for_city(city)
         all_events.extend(events)
 
+    online_events = fetch_events_for_city("online")
+    all_events.extend(online_events)
+
     print(f"Total raw events fetched: {len(all_events)}")
 
     parsed_events = transform_events(all_events)
