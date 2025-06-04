@@ -123,10 +123,10 @@ def build_translation_prompt(event_id: str, texts: dict) -> str:
 
 def translate_event_fields(event: dict) -> dict:
     fields = {
-        "name": event.get("name", ""),
-        "description": event.get("description", ""),
-        "venue_name": event.get("venue", {}).get("name", ""),
-        "city": event.get("venue", {}).get("city", ""),
+        "name": str(event.get("name") or ""),
+        "description": str(event.get("description") or ""),
+        "venue_name": str(event.get("venue", {}).get("name") or ""),
+        "city": str(event.get("venue", {}).get("city") or ""),
     }
 
     prompt = build_translation_prompt(event.get("id", ""), fields)

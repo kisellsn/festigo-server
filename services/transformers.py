@@ -2,56 +2,57 @@ from app.models import Event, Venue
 from datetime import datetime
 from typing import List
 
+from services.translation_ai import translate_event_fields
 from services.translation import translate_text, translate_city
 
-def safe_translate(text: str) -> str:
-    try:
-        return translate_text(text)
-    except Exception as e:
-        print(f"Translation error: {e}")
-        return text
-
 def parse_event(raw: dict) -> Event:
-    name_en = raw["name"]
-    description_en = raw.get("description")
+    name_en = raw.get("name", "")
+    description_en = raw.get("description", "")
+    venue_data = raw.get("venue", {})
+    city = venue_data.get("city", "") if venue_data else ""
 
-    name_uk = safe_translate(name_en)
-    description_uk = safe_translate(description_en) if description_en else None
+    # Основні поля для перекладу
+    translation_input = {
+        "name": name_en,
+        "description": description_en,
+        "venue_name": venue_data.get("name", ""),
+        "city": city,
+    }
 
-    venue_data = raw.get("venue")
+    translated = translate_event_fields(translation_input)
+
+    name_uk = translated.get("name") or translate_text(name_en)
+    description_uk = translated.get("description") or translate_text(description_en) if description_en else None
+    venue_name_uk = translated.get("venue_name") or translate_text(venue_data.get("name", "")) if venue_data else ""
+    city_uk = translated.get("city") or translate_city(city) if city else ""
+
     venue = None
     if venue_data:
-        name_venue_en = venue_data.get("name", "")
-        address_en = venue_data.get("full_address", "")
-        print(venue_data)
-
         subtypes = venue_data.get("subtypes")
         if subtypes is None:
             subtype = venue_data.get("subtype")
             subtypes = [subtype] if subtype else []
 
         venue = Venue(
-            name=name_venue_en,
-            name_uk=safe_translate(name_venue_en),
-            address=address_en,
-            latitude=venue_data["latitude"],
-            longitude=venue_data["longitude"],
+            name=venue_data.get("name", ""),
+            name_uk=venue_name_uk,
+            address=venue_data.get("full_address", ""),
+            latitude=venue_data.get("latitude"),
+            longitude=venue_data.get("longitude"),
             subtypes=subtypes
         )
 
-    categories = raw.get("tags", [])
+    # Посилання
     link = raw.get("link")
     if not link:
         info_links = raw.get("info_links", [])
         ticket_links = raw.get("ticket_links", [])
-
         if info_links and isinstance(info_links[0], dict):
             link = info_links[0].get("link")
         elif ticket_links and isinstance(ticket_links[0], dict):
             link = ticket_links[0].get("link")
 
-    city = venue_data.get("city", "") if venue_data else ""
-    city_uk = translate_city(city) if city else ""
+    categories = raw.get("tags", [])
     return Event(
         id=raw["event_id"],
         name=name_en,
