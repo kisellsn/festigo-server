@@ -154,7 +154,7 @@ def recommend_events_for_user(user_id, top_n=20):
         field_names = aggregated_profile.keys()
 
     # ----------------- events info
-    events_docs = db.collection("events").stream() #TODO: smth more effective than stream()
+    events_docs = db.collection("events").stream()
 
     events = []
     for doc in events_docs:
@@ -210,5 +210,5 @@ def get_recommendations(user_id, top_n=20):
     return recommend_events_for_user(user_id, top_n)
 
 if __name__ == "__main__":
-    print(len(get_recommendations("5DAGbcxFASgjsUNm15nP3AIlMYu1")))
-    # print(len(get_recommendations("Ybd9Xb0IsDPdDGySzeXv56D7znJ3")))
+    # print(len(get_recommendations("5DAGbcxFASgjsUNm15nP3AIlMYu1")))
+    print(len(get_recommendations("Ybd9Xb0IsDPdDGySzeXv56D7znJ3")))

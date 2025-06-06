@@ -106,8 +106,9 @@ IMPLICIT_GENRE_HINTS = {
 CATEGORY_TRANSLATION = {
     "Концерти": "music",
     "Вистави": "show",
-    "Виставки": "exhibition",
     "Фестивалі": "festival",
+    "Виставки": "exhibition",
+    "Кіно": "cinema",
     "Лекції та воркшопи": "education",
     "Спортивні події": "sport",
     "Інше": "other"
