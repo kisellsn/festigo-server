@@ -161,8 +161,8 @@ def recommend_events_for_user(user_id, top_n=20):
         event = doc.to_dict()
         if "component_vectors" not in event:
             continue
-        if not isinstance(event.get("endTime"), datetime) or event["endTime"] < datetime.now(timezone.utc):
-            continue
+        # if not isinstance(event.get("endTime"), datetime) or event["endTime"] < datetime.now(timezone.utc):
+        #     continue
         events.append(event)
 
     scored = []

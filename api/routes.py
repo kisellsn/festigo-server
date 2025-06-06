@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app.config import SECRET_KEY, ALGORITHM
 from app.dependencies import verify_token, verify_token_easy
 from app.models import FirebaseLoginRequest
-from recommendation.user_profile import build_profile_vector, update_profile_vector
+from recommendation.user_profile import build_profile_vector, update_profile_vector, get_similar_to_last_liked
 from services.fetcher import fetch_and_store_events
 from services.firestore_client import delete_expired_events, set_last_manual_sync_time
 from recommendation.recommendation_engine import get_recommendations
@@ -51,4 +51,12 @@ def get_user_recommendations(request: Request):
     user_id = request.state.user_id
     recommendations = get_recommendations(user_id)
     return {"recommendations": recommendations}
+
+@router.get("/user/get_similar_events", dependencies=[Depends(verify_token)])
+def get_similar_events(request: Request):
+    user_id = request.state.user_id
+    similar, last_fav_id = get_similar_to_last_liked(user_id)
+    return {"similar": similar,
+            "lastLikedEventId": last_fav_id}
+
 
