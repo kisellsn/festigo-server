@@ -4,6 +4,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 from google.cloud import firestore
+from sklearn.preprocessing import minmax_scale
 
 from app.config import CATEGORY_TRANSLATION, GENRE_TRANSLATION
 from recommendation.scoring import score_event_by_components
@@ -13,7 +14,7 @@ from services.firestore_client import db
 
 def geocode_address(address: str) -> Optional[Tuple[float, float]]:
     """
-    Геокодує текстову адресу в координати (lat, lon).
+    geocodes a text address into coordinates (lat, lon).
     """
     pass
 def get_city_from_address(address):
@@ -58,8 +59,7 @@ def build_profile_vector(user_id):
 
 def update_profile_vector(user_id: str):
     """
-    Updates the user's profile vector by averaging the onboarding profile with
-    the one derived from liked (favourite) events.
+    updates the user profile vector by averaging the registration profile with the profile obtained from liked events.
     """
     user_doc = db.collection("users").document(user_id).get()
     if not user_doc.exists:
@@ -108,8 +108,15 @@ def update_profile_vector(user_id: str):
         if not old_vector or len(old_vector) != len(new_vector):
             averaged_profile[key] = new_vector  # fallback
         else:
-            averaged = [0.3 * old + 0.7 * new for old, new in zip(old_vector, new_vector)]
-            averaged_profile[key] = averaged
+            # averaged = [0.3 * old + 0.7 * new for old, new in zip(old_vector, new_vector)]
+            # averaged_profile[key] = averaged
+            combined = [old + new for old, new in zip(old_vector, new_vector)]
+            scaled = minmax_scale(combined)
+            total = sum(scaled)
+            normalized = [v / total for v in scaled] if total > 0 else scaled
+            thresholded = [v if v > 0.02 else 0 for v in normalized]
+            total_thresh = sum(thresholded)
+            averaged_profile[key] = [v / total_thresh for v in thresholded] if total_thresh > 0 else thresholded
 
     # print(averaged_profile)
     db.collection("users").document(user_id).update({
@@ -121,7 +128,7 @@ def update_profile_vector(user_id: str):
 
 def get_similar_to_last_liked(user_id, top_n=10):
     """
-    Повертає подібні події до останньої лайкнутої події користувача
+    returns similar events to the user's last liked event
     """
     fav_ref = db.collection("users").document(user_id).collection("favourite_events")
     fav_docs = list(fav_ref.order_by("date_created", direction=firestore.Query.DESCENDING).limit(1).stream())
@@ -142,12 +149,12 @@ def get_similar_to_last_liked(user_id, top_n=10):
     if "component_vectors" not in base_event:
         return []
 
-    # 2. Витягуємо вектори останньої лайкнутої події
+    # вектори останньої лайкнутої події
     base_components = base_event["component_vectors"]
     field_names = base_components.keys()
     base_components = {k: np.array(v) for k, v in base_components.items()}
 
-    # 3. Витягуємо всі майбутні події з векторами
+    # майбутні події
     events_docs = db.collection("events").stream()
 
     events = []
@@ -161,7 +168,7 @@ def get_similar_to_last_liked(user_id, top_n=10):
             continue
         events.append(e)
 
-    # 4. Рахуємо схожість (косинусна відстань або dot product)
+    # схожість
     scored = []
     for event in events:
         ev_vecs = {k: np.array(v) for k, v in event["component_vectors"].items() if k in field_names}
