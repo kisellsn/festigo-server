@@ -1,7 +1,6 @@
 import json
 import re
 from datetime import datetime, timezone
-from types import NoneType
 
 import numpy as np
 from geopy.distance import geodesic
@@ -149,11 +148,10 @@ def recommend_events_for_user(user_id, top_n=20):
                 aggregated_profile[field] = liked_mean
 
     else:
-        # Якщо немає улюблених подій, беремо профіль з анкети
         aggregated_profile = {k: np.array(v) for k, v in profile_components.items()}
         field_names = aggregated_profile.keys()
 
-    # ----------------- events info
+    # --- events info
     events_docs = db.collection("events").stream()
 
     events = []
