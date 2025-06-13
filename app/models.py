@@ -42,5 +42,7 @@ class Event(BaseModel):
 class FirebaseLoginRequest(BaseModel):
     user_id: str
 
+class EventUpdateRequest(BaseModel):
+    event_id: str
 
 

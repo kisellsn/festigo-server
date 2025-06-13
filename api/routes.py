@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.config import SECRET_KEY, ALGORITHM
 from app.dependencies import verify_token, verify_token_easy
-from app.models import FirebaseLoginRequest
+from app.models import FirebaseLoginRequest, EventUpdateRequest
 from recommendation.user_profile import build_profile_vector, update_profile_vector, get_similar_to_last_liked
 from services.fetcher import fetch_and_store_events
 from services.firestore_client import delete_expired_events, set_last_manual_sync_time
@@ -41,9 +41,9 @@ def init_user_profile(request: Request):
     return {"status": "User profile initialized"}
 
 @router.post("/user/update_profile", dependencies=[Depends(verify_token)])
-def update_user_profile(request: Request):
+def update_user_profile(request: Request, body: EventUpdateRequest):
     user_id = request.state.user_id
-    update_profile_vector(user_id)
+    update_profile_vector(user_id, body.event_id)
     return {"status": "Profile updated"}
 
 @router.get("/user/get_recommendations", dependencies=[Depends(verify_token)])

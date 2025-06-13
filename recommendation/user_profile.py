@@ -57,78 +57,64 @@ def build_profile_vector(user_id):
     })
     return profile_components
 
-def update_profile_vector(user_id: str):
+def update_profile_vector(user_id, event_id, alpha = 0.7):
     """
-    updates the user profile vector by averaging the registration profile with the profile obtained from liked events.
+    updates the user profile vector by integrating the last-liked event using exponential smoothing.
+
+    :param event_id: last liked event
+    :param alpha: weight
     """
+    from sklearn.preprocessing import minmax_scale
+
     user_doc = db.collection("users").document(user_id).get()
     if not user_doc.exists:
         return None
-
     user_data = user_doc.to_dict()
-    existing_profile = user_data.get("component_profile_vectors")
-    if not existing_profile:
-        build_profile_vector(user_id)
+    profile = user_data.get("component_profile_vectors")
+    if not profile:
+        profile = build_profile_vector(user_id)
+        if not profile:
+            return None
 
-    # Завантаження улюблених подій
-    favourite_events_ref = db.collection("users").document(user_id).collection("favourite_events")
-    favourite_events = list(favourite_events_ref.stream())
-
-    if not favourite_events:
+    # нова подія
+    event_doc = db.collection("events").document(event_id).get()
+    if not event_doc.exists:
         return None
+    event_data = event_doc.to_dict()
 
-    liked_categories = set()
-    liked_genres = set()
-
-    for fav_event in favourite_events:
-        fav_data = fav_event.to_dict()
-        event_id = fav_data.get("id")
-        if not event_id:
-            continue
-
-        event_doc = db.collection("events").document(event_id).get()
-        if not event_doc.exists:
-            continue
-
-        event_data = event_doc.to_dict()
-        liked_categories.update(event_data.get("main_categories", []))
-        liked_genres.update(event_data.get("genres", []))
-
-    # new vector
-    new_profile_components = {
-        "main_categories": category_vector(list(liked_categories)),
-        "genres": genre_vector(list(liked_genres))
+    event_vector = {
+        "main_categories": category_vector(event_data.get("main_categories", [])),
+        "genres": genre_vector(event_data.get("genres", []))
     }
-    # print(new_profile_components)
-    # avg з існуючим профілем
-    averaged_profile = {}
-    for key in new_profile_components:
-        old_vector = existing_profile.get(key)
-        new_vector = new_profile_components[key]
-        if not old_vector or len(old_vector) != len(new_vector):
-            averaged_profile[key] = new_vector  # fallback
+
+    # оновлення профілю
+    updated_profile = {}
+    for key in event_vector:
+        old_vec = profile.get(key)
+        new_vec = event_vector[key]
+        if not old_vec or len(old_vec) != len(new_vec):
+            updated_profile[key] = new_vec
         else:
-            # averaged = [0.3 * old + 0.7 * new for old, new in zip(old_vector, new_vector)]
-            # averaged_profile[key] = averaged
-            combined = [old + new for old, new in zip(old_vector, new_vector)]
+            combined = [alpha * new + (1 - alpha) * old for old, new in zip(old_vec, new_vec)]
             scaled = minmax_scale(combined)
             total = sum(scaled)
             normalized = [v / total for v in scaled] if total > 0 else scaled
             thresholded = [v if v > 0.02 else 0 for v in normalized]
             total_thresh = sum(thresholded)
-            averaged_profile[key] = [v / total_thresh for v in thresholded] if total_thresh > 0 else thresholded
+            updated_profile[key] = [v / total_thresh for v in thresholded] if total_thresh > 0 else thresholded
 
-    # print(averaged_profile)
+    # Зберігаємо
     db.collection("users").document(user_id).update({
-        "component_profile_vectors": averaged_profile
+        "component_profile_vectors": updated_profile
     })
 
-    return averaged_profile
+    return updated_profile
+
 
 
 def get_similar_to_last_liked(user_id, top_n=10):
     """
-    returns similar events to the user's last liked event
+    returns similar events to the user's last-liked event
     """
     fav_ref = db.collection("users").document(user_id).collection("favourite_events")
     fav_docs = list(fav_ref.order_by("date_created", direction=firestore.Query.DESCENDING).limit(1).stream())
@@ -182,3 +168,7 @@ def get_similar_to_last_liked(user_id, top_n=10):
 
 if __name__ == "__main__":
     print(get_similar_to_last_liked("5DAGbcxFASgjsUNm15nP3AIlMYu1"))
+    # print(update_profile_vector(
+    #     "5DAGbcxFASgjsUNm15nP3AIlMYu1",
+    #     "L2F1dGhvcml0eS9ob3Jpem9uL2NsdXN0ZXJlZF9ldmVudC8yMDI1LTA0LTI2fDEwMDM1NTU5OTk3MDA0MjA2Nzk4"))
+
