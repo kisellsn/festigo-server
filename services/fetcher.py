@@ -35,12 +35,16 @@ OTHER_CITIES = [
 
 DATE = "next_month"
 
-def fetch_events_for_query(query: str, offset: int = 0, date: str = DATE) -> list:
+def fetch_events_for_query(query: str, offset: int = 0, date: str = DATE, is_virtual: bool = False) -> list:
     params = {
         "query": query,
         "date": date,
-        "start": str(offset),
+        "start": str(offset)
     }
+
+    if is_virtual:
+        params["is_virtual"] = "true"
+
     try:
         response = requests.get(EVENTS_API_URL, headers=HEADERS, params=params)
         response.raise_for_status()
@@ -66,7 +70,7 @@ def fetch_and_store_events():
     all_events.extend(other_events)
 
     # онлайн події
-    online_events = fetch_events_for_query("online")
+    online_events = fetch_events_for_query("ukraine", is_virtual = True)
     all_events.extend(online_events)
 
     print(f"Total raw events fetched: {len(all_events)}")
