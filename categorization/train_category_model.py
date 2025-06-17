@@ -3,11 +3,11 @@ import random
 import joblib
 
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.multiclass import OneVsRestClassifier
-from sklearn.svm import LinearSVC
 from sklearn.pipeline import make_pipeline
-from sklearn.model_selection import train_test_split
 from app.config import CATEGORY_KEYWORDS
 from services.firestore_client import db
 
@@ -55,13 +55,26 @@ def export_training_data_to_file(filepath="../test_data/real_training_data.json"
         event = doc.to_dict()
         text_parts = []
 
-        text_parts.append(get_text(event.get("name", "")))
-        text_parts.append(get_text(event.get("description", "")))
-        text_parts.append(get_text(event.get("genres", [])))
-        text_parts.append(get_text(event.get("isVirtual", False)))
-        text_parts.append(get_text(event.get("venue", {}).get("subtypes", [])))
+        name = get_text(event.get("name", ""))
+        if name:
+            text_parts.append(f"Event name: {name}")
 
-        full_text = ". ".join(part for part in text_parts if part).strip()
+        description = get_text(event.get("description", ""))
+        if description:
+            text_parts.append(f"Description: {description}")
+
+        genres = get_text(event.get("genres", []))
+        if genres:
+            text_parts.append(f"Genres: {genres}")
+
+        subtypes = get_text(event.get("venue", {}).get("subtypes", []))
+        if subtypes:
+            text_parts.append(f"Location type: {subtypes}")
+
+        is_virtual = get_text(event.get("isVirtual", False))
+        text_parts.append(f"Format: {is_virtual}")
+
+        full_text = ". ".join(text_parts).strip()
 
         labels = []
         for item in event.get("categories_scored", []):
@@ -87,14 +100,14 @@ def load_training_data_from_file(filepath="../test_data/real_training_data.json"
 # -------- Навчання моделі --------
 
 def train_model_with_pretrain_and_finetune():
-    # --- 1. Генеруємо синтетичні дані ---
+    # --- синтетичні дані ---
     synthetic_data = generate_training_data(1000)
     print(f"🧪 Generated {len(synthetic_data)} synthetic samples")
 
-    # --- 2. Завантажуємо реальні ---
+    # ---  реальні ---
     real_data = load_training_data_from_file()
 
-    # --- 3. Обʼєднуємо ---
+    # --- разом ---
     all_data = synthetic_data + real_data
     texts = [text for text, labels in all_data]
     labels = [labels for text, labels in all_data]
@@ -103,27 +116,31 @@ def train_model_with_pretrain_and_finetune():
     Y = mlb.fit_transform(labels)
 
     model = make_pipeline(
-        TfidfVectorizer(ngram_range=(1, 2), max_features=5000),
-        OneVsRestClassifier(LinearSVC())
+        TfidfVectorizer(ngram_range=(1, 3), max_features=8000),
+        OneVsRestClassifier(LogisticRegression(max_iter=1000))
     )
 
-    # --- 4. Навчання на синтетиці ---
+    # --- навчання ---
     X_synth, y_synth = zip(*synthetic_data)
     X_real, y_real = zip(*real_data)
 
     y_synth_bin = mlb.transform(y_synth)
     y_real_bin = mlb.transform(y_real)
 
-    print("🔁 Pretraining on synthetic data...")
     model.fit(X_synth, y_synth_bin)
-
-    print("🎯 Fine-tuning on real data...")
     model.fit(X_real, y_real_bin)
 
-    # --- 5. Збереження ---
+    # --- оцінка  ---
+    print("📊 Оцінка моделі...")
+    y_pred_bin = model.predict(X_real)
+    report = classification_report(y_real_bin, y_pred_bin, target_names=mlb.classes_, zero_division=0)
+    print(report)
+
+
+    # --- збереження ---
     joblib.dump(model, "models/category_model_multi.joblib")
     joblib.dump(mlb, "models/category_mlb.joblib")
-    print("✅ Модель і MultiLabelBinarizer збережено.")
+    print("✅ Модель збережено.")
 
 
 if __name__ == "__main__":
