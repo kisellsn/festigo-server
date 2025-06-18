@@ -217,6 +217,7 @@ city_translation_map = {
     "Zhmerynka": "Жмеринка",
     "Zolochiv": "Золочів",
     "Pervomaisk": "Первомайськ",
-    "Lubny": "Лубни",
-    "Truskavets": "Трускавець"
+    "Berezan'": "Березань",
+    "Busk": "Буськ",
+    "Vynnyky": "Винники",
 }

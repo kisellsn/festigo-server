@@ -1,57 +1,12 @@
-import requests
-import os
-
-from app.config import GEMINI_API_KEY
-
-
-def translate_with_gemini(prompt_text: str) -> str:
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-        f"?key={GEMINI_API_KEY}"
-    )
-    headers = {"Content-Type": "application/json"}
-
-    payload = {
-        "contents": [
-            {
-                "parts": [{"text": prompt_text}]
-            }
-        ]
-    }
-
-    try:
-        response = requests.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-        result = response.json()
-
-        return result["candidates"][0]["content"]["parts"][0]["text"].strip()
-
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Request error: {e}")
-        return ""
-    except (KeyError, IndexError) as e:
-        print(f"❌ Parsing error: {e}, raw response: {response.text}")
-        return ""
-
-def build_translation_prompt(event_id: str, texts: dict) -> str:
-    combined = []
-    for key, val in texts.items():
-        if val:
-            combined.append(f"{key}: {val}")
-    joined = "\n".join(combined)
-
-    return (
-        f"Translate each field value to Ukrainian. "
-        f"If a field is written in Latin letters (transliterated Ukrainian), convert it to proper Ukrainian Cyrillic. "
-        f"Return the result in the same format: 'field: translated value'. "
-        f"Do not add any comments or extra text.\n\n"
-        f"{joined}"
-    )
-
 import re
+import time
+
 from deep_translator import GoogleTranslator
 from app.config import city_translation_map, GEMINI_API_KEY
 import requests
+
+REQUESTS_PER_MIN = 15
+SECONDS_BETWEEN_REQUESTS = 60 / REQUESTS_PER_MIN
 
 def replace_cities_in_text(text: str) -> str:
     if not text:
@@ -121,6 +76,11 @@ def build_translation_prompt(event_id: str, texts: dict) -> str:
     )
 
 
+def translate_event_fields_limited(data):
+    translated = translate_event_fields(data)
+    time.sleep(SECONDS_BETWEEN_REQUESTS)
+    return translated
+
 def translate_event_fields(event: dict) -> dict:
     fields = {
         "name": str(event.get("name") or ""),
@@ -163,7 +123,7 @@ def translate_event_fields(event: dict) -> dict:
 
 
 if __name__ == "__main__":
-    # Тестовий приклад
+    # приклад
     sample_event = {
         "id": "sample123",
         "name": "Buy tickets to the concert in Lviv",

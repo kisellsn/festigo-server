@@ -2,7 +2,7 @@ from app.models import Event, Venue
 from datetime import datetime
 from typing import List
 
-from services.translation_ai import translate_event_fields
+from services.translation_ai import translate_event_fields, translate_event_fields_limited
 from services.translation import translate_text, translate_city
 
 def parse_event(raw: dict) -> Event:
@@ -19,7 +19,7 @@ def parse_event(raw: dict) -> Event:
         "city": city,
     }
 
-    translated = translate_event_fields(translation_input)
+    translated = translate_event_fields_limited(translation_input)
 
     name_uk = translated.get("name") or translate_text(name_en)
     description_uk = translated.get("description") or translate_text(description_en) if description_en else None

@@ -96,12 +96,13 @@ def delete_event_by_id(event_id: str) -> bool:
 
 
 if __name__ == "__main__":
-    # Для тестування — завантаження з файлу
-    with open("../test_data/categorized_events.json", "r", encoding="utf-8") as f:
-        api_response = json.load(f)
-
-    parsed_events = asyncio.run(transformers.transform_events(api_response[2:]))
-    print(f"Total raw events fetched: {len(parsed_events)}")
+    delete_expired_events()
+    # # Для тестування — завантаження з файлу
+    # with open("../test_data/categorized_events.json", "r", encoding="utf-8") as f:
+    #     api_response = json.load(f)
+    #
+    # parsed_events = asyncio.run(transformers.transform_events(api_response[2:]))
+    # print(f"Total raw events fetched: {len(parsed_events)}")
     # save_events(parsed_events)
     # print(f"Збережено {len(parsed_events)} івентів у Firestore.")
 
